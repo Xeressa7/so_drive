@@ -27,6 +27,10 @@ Makefile.*
 *.dll
 *.exe
 *.app
+*.so
+*.dylib
+debug/
+release/
 
 # Qt auto-generated files (produced at build time)
 moc_*.cpp
@@ -36,8 +40,15 @@ qrc_*.cpp
 
 # OS / IDE
 .vscode/
+.vs/
 .idea/
 *.swp
 *~
 .DS_Store
 Thumbs.db
+
+# Logs
+*.log
+
+# Claude Code
+CLAUDE.md
