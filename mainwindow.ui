@@ -10,6 +10,12 @@
     <height>700</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>500</width>
+    <height>600</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>SO Drive Client Login</string>
   </property>
@@ -33,7 +39,6 @@ QLineEdit {
 QLineEdit:focus {
     border: 1px solid #3daee9;
 }
-
 QPushButton {
     background-color: #3daee9;
     color: white;
@@ -41,187 +46,191 @@ QPushButton {
     padding: 8px;
     font-weight: bold;
 }
-QPushButton:hover {
-    background-color: #50bfff; 
-}
-QPushButton:pressed {
-    background-color: #2488c0;
-}
-
-QCheckBox {
-    spacing: 5px;
-}
-QCheckBox::indicator {
-    width: 18px;
-    height: 18px;
-}</string>
+QPushButton:hover { background-color: #50bfff; }
+QPushButton:pressed { background-color: #2488c0; }
+QCheckBox { spacing: 5px; }
+QCheckBox::indicator { width: 18px; height: 18px; }</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>310</x>
-      <y>60</y>
-      <width>341</width>
-      <height>241</height>
-     </rect>
+   <layout class="QVBoxLayout" name="mainLayout">
+    <property name="spacing">
+     <number>16</number>
     </property>
-    <property name="text">
-     <string/>
+    <property name="leftMargin">
+     <number>20</number>
     </property>
-    <property name="pixmap">
-     <pixmap resource="resources.qrc">:/new/prefix1/images/emblem.png</pixmap>
+    <property name="topMargin">
+     <number>20</number>
     </property>
-    <property name="alignment">
-     <set>Qt::AlignmentFlag::AlignCenter</set>
+    <property name="rightMargin">
+     <number>20</number>
     </property>
-   </widget>
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>270</x>
-      <y>310</y>
-      <width>421</width>
-      <height>262</height>
-     </rect>
+    <property name="bottomMargin">
+     <number>20</number>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_5">
-       <item>
-        <widget class="QLabel" name="label_username">
-         <property name="font">
-          <font>
-           <family>Consolas</family>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LayoutDirection::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Username</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="input_username"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="QLabel" name="label_password">
-         <property name="font">
-          <font>
-           <family>Consolas</family>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LayoutDirection::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Password</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="input_password"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_4">
-       <item>
-        <widget class="QLabel" name="label_ip_address">
-         <property name="font">
-          <font>
-           <family>Consolas</family>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LayoutDirection::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>IP Address</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="input_ip_address"/>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="QLabel" name="label_port">
-         <property name="font">
-          <font>
-           <family>Consolas</family>
-           <pointsize>12</pointsize>
-          </font>
-         </property>
-         <property name="layoutDirection">
-          <enum>Qt::LayoutDirection::RightToLeft</enum>
-         </property>
-         <property name="text">
-          <string>Port</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QLineEdit" name="input_port"/>
-       </item>
-      </layout>
-     </item>
-    </layout>
-   </widget>
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>425</x>
-      <y>581</y>
-      <width>124</width>
-      <height>62</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout_6">
-     <item>
-      <widget class="QCheckBox" name="button_remember_me">
-       <property name="font">
-        <font>
-         <family>Consolas</family>
-         <pointsize>12</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Remember me</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="button_connect">
-       <property name="font">
-        <font>
-         <family>Consolas</family>
-         <pointsize>12</pointsize>
-         <bold>true</bold>
-        </font>
-       </property>
-       <property name="text">
-        <string>Connect</string>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
-   <zorder>layoutWidget</zorder>
-   <zorder>layoutWidget</zorder>
-   <zorder>label</zorder>
+    <item>
+     <spacer name="topSpacer">
+      <property name="orientation"><enum>Qt::Vertical</enum></property>
+      <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+      <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+     </spacer>
+    </item>
+    <!-- Logo: centered with horizontal spacers -->
+    <item>
+     <layout class="QHBoxLayout" name="logoRow">
+      <item>
+       <spacer name="logoLeftSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="label">
+        <property name="minimumSize"><size><width>200</width><height>150</height></size></property>
+        <property name="maximumSize"><size><width>341</width><height>241</height></size></property>
+        <property name="text"><string/></property>
+        <property name="pixmap">
+         <pixmap resource="resources.qrc">:/new/prefix1/images/emblem.png</pixmap>
+        </property>
+        <property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property>
+        <property name="scaledContents"><bool>true</bool></property>
+       </widget>
+      </item>
+      <item>
+       <spacer name="logoRightSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <!-- Form fields: centered with horizontal spacers -->
+    <item>
+     <layout class="QHBoxLayout" name="formRow">
+      <item>
+       <spacer name="formLeftSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="formLayout">
+        <property name="spacing"><number>8</number></property>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QLabel" name="label_username">
+            <property name="font"><font><family>Consolas</family><pointsize>12</pointsize></font></property>
+            <property name="layoutDirection"><enum>Qt::LayoutDirection::RightToLeft</enum></property>
+            <property name="text"><string>Username</string></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="input_username">
+            <property name="minimumSize"><size><width>421</width><height>0</height></size></property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QLabel" name="label_password">
+            <property name="font"><font><family>Consolas</family><pointsize>12</pointsize></font></property>
+            <property name="layoutDirection"><enum>Qt::LayoutDirection::RightToLeft</enum></property>
+            <property name="text"><string>Password</string></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="input_password"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="QLabel" name="label_ip_address">
+            <property name="font"><font><family>Consolas</family><pointsize>12</pointsize></font></property>
+            <property name="layoutDirection"><enum>Qt::LayoutDirection::RightToLeft</enum></property>
+            <property name="text"><string>IP Address</string></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="input_ip_address"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <item>
+           <widget class="QLabel" name="label_port">
+            <property name="font"><font><family>Consolas</family><pointsize>12</pointsize></font></property>
+            <property name="layoutDirection"><enum>Qt::LayoutDirection::RightToLeft</enum></property>
+            <property name="text"><string>Port</string></property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="input_port"/>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="formRightSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <!-- Buttons: centered with horizontal spacers -->
+    <item>
+     <layout class="QHBoxLayout" name="buttonRow">
+      <item>
+       <spacer name="btnLeftSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QCheckBox" name="button_remember_me">
+          <property name="font"><font><family>Consolas</family><pointsize>12</pointsize></font></property>
+          <property name="text"><string>Remember me</string></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="button_connect">
+          <property name="font"><font><family>Consolas</family><pointsize>12</pointsize><bold>true</bold></font></property>
+          <property name="text"><string>Connect</string></property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="btnRightSpacer">
+        <property name="orientation"><enum>Qt::Horizontal</enum></property>
+        <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+        <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+       </spacer>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <spacer name="bottomSpacer">
+      <property name="orientation"><enum>Qt::Vertical</enum></property>
+      <property name="sizeType"><enum>QSizePolicy::Expanding</enum></property>
+      <property name="sizeHint" stdset="0"><size><width>20</width><height>20</height></size></property>
+     </spacer>
+    </item>
+   </layout>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
