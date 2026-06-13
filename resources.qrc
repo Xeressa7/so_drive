@@ -1,0 +1,25 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>images/button_back.png</file>
+        <file>images/button_next.png</file>
+        <file>images/emblem.png</file>
+        <file>images/ic_audio.png</file>
+        <file>images/ic_cpp.png</file>
+        <file>images/ic_excel.png</file>
+        <file>images/ic_exe.png</file>
+        <file>images/ic_file.png</file>
+        <file>images/ic_folder.png</file>
+        <file>images/ic_html.png</file>
+        <file>images/ic_image.png</file>
+        <file>images/ic_json.png</file>
+        <file>images/ic_pdf.png</file>
+        <file>images/ic_ppt.png</file>
+        <file>images/ic_py.png</file>
+        <file>images/ic_sql.png</file>
+        <file>images/ic_txt.png</file>
+        <file>images/ic_video.png</file>
+        <file>images/ic_word.png</file>
+        <file>images/ic_xml.png</file>
+        <file>images/ic_zip.png</file>
+    </qresource>
+</RCC>

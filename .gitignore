@@ -1,0 +1,43 @@
+# Build directories
+build/
+build-*/
+out/
+
+# Qt Creator IDE files
+*.pro.user
+*.pro.user.*
+.qtcreator/
+
+# CMake generated
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+*.cmake
+!CMakeLists.txt
+Makefile
+Makefile.*
+.qmake.stash
+.qmake.cache
+
+# Compiled binaries
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.exe
+*.app
+
+# Qt auto-generated files (produced at build time)
+moc_*.cpp
+moc_*.h
+ui_*.h
+qrc_*.cpp
+
+# OS / IDE
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db

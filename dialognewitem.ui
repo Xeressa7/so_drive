@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DialogNewItem</class>
+ <widget class="QDialog" name="DialogNewItem">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SO Drive Client Create Tab</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/new/prefix1/images/emblem.png</normaloff>:/new/prefix1/images/emblem.png</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+    background-color: #2b2b2b;
+    color: #ffffff;
+    font-family: &quot;Consolas&quot;;
+}
+
+/* Dosya Listesi Kutusu */
+QListWidget {
+    background-color: #000000;
+    border: 1px solid #555555;
+    color: #00ff00; /* Dosyalar yeşil görünsün */
+    font-size: 12pt;
+}
+
+/* Butonlar */
+QPushButton {
+    background-color: #808080;
+    color: white;
+    border-radius: 4px;
+    padding: 8px;
+    font-weight: bold;
+}
+QPushButton:hover { background-color: #808080; }
+QPushButton:pressed { background-color: #1a1a1a; }
+
+/* Çıkış Butonu Özel Renk (İsteğe bağlı) */
+QPushButton#button_logout {
+    background-color: #d9534f; /* Kırmızımsı */
+    color: white;
+}
+QPushButton#button_logout:hover { background-color: #c9302c; }
+/* --- SADECE NAVİGASYON BUTONLARI (Şeffaf Olsun) --- */
+
+QPushButton#button_back, QPushButton#button_next {
+    background-color: transparent;   /* Arka plan şeffaf (İkon ön planda) */
+    border: 2px solid #555555;       /* GRİ ÇERÇEVE (İstediğin özellik bu) */
+    border-radius: 15px;             /* Köşeler yuvarlak */
+    min-width: 30px;                 /* Buton çok daralmasın */
+    min-height: 30px;
+}
+/* Genel Tab Çerçevesi */
+QTabWidget::pane {
+    border: 1px solid #444444;
+    background-color: #1e1e1e; /* İçerik alanı rengi */
+    border-radius: 4px;
+}
+
+/* Sekme Başlıklarının Olduğu Şerit */
+QTabBar::tab {
+    background-color: #2b2b2b; /* Pasif sekme rengi */
+    color: #aaaaaa;            /* Pasif yazı rengi */
+    padding: 8px 20px;         /* Genişlik ve yükseklik */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;         /* Sekmeler birbirine yapışmasın */
+}
+
+/* Seçili Olan (Aktif) Sekme */
+QTabBar::tab:selected {
+    background-color: #1e1e1e; /* İçerikle aynı renk olsun ki bütünleşsin */
+    color: #00ff00;            /* Aktif dosya ismi YEŞİL yansın */
+    border-bottom: 2px solid #00ff00; /* Altına yeşil çizgi çekelim */
+    font-weight: bold;
+}
+
+/* Üzerine Gelince */
+QTabBar::tab:hover {
+    background-color: #333333;
+    color: white;
+}</string>
+  </property>
+  <widget class="QLineEdit" name="input_name">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>130</y>
+     <width>241</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string/>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="combo_type">
+   <property name="geometry">
+    <rect>
+     <x>160</x>
+     <y>190</y>
+     <width>91</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>.cpp</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.h</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.hpp</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.py</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.json</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.xml</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.ui</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.sql</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.sqlite</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.html</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.css</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.js</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.txt</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.pdf</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.docx</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.doc</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.xlsx</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.xls</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.pptx</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.ppt</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.png</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.jpg</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.jpeg</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.ico</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.mp4</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.avi</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.mkv</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.mp3</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.wav</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.zip</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.rar</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.7z</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>.tar</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QLabel" name="label">
+   <property name="geometry">
+    <rect>
+     <x>40</x>
+     <y>100</y>
+     <width>321</width>
+     <height>20</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Please enter the name for the new file/folder:</string>
+   </property>
+  </widget>
+  <widget class="QDialogButtonBox" name="buttonBox">
+   <property name="geometry">
+    <rect>
+     <x>140</x>
+     <y>230</y>
+     <width>111</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="standardButtons">
+    <set>QDialogButtonBox::StandardButton::Cancel|QDialogButtonBox::StandardButton::Ok</set>
+   </property>
+  </widget>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -1,0 +1,270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>FileWindow</class>
+ <widget class="QWidget" name="FileWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1200</width>
+    <height>800</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SO Drive Client File System</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="resources.qrc">
+    <normaloff>:/new/prefix1/images/emblem.png</normaloff>:/new/prefix1/images/emblem.png</iconset>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">QWidget {
+    background-color: #2b2b2b;
+    color: #ffffff;
+    font-family: &quot;Consolas&quot;;
+}
+
+/* Dosya Listesi Kutusu */
+QListWidget {
+    background-color: #000000;
+    border: 1px solid #555555;
+    color: #00ff00; /* Dosyalar yeşil görünsün */
+    font-size: 12pt;
+}
+
+/* Butonlar */
+QPushButton {
+    background-color: #808080;
+    color: white;
+    border-radius: 4px;
+    padding: 8px;
+    font-weight: bold;
+}
+QPushButton:hover { background-color: #808080; }
+QPushButton:pressed { background-color: #1a1a1a; }
+
+/* Çıkış Butonu Özel Renk (İsteğe bağlı) */
+QPushButton#button_logout {
+    background-color: #d9534f; /* Kırmızımsı */
+    color: white;
+}
+QPushButton#button_logout:hover { background-color: #c9302c; }
+/* --- SADECE NAVİGASYON BUTONLARI (Şeffaf Olsun) --- */
+
+QPushButton#button_back, QPushButton#button_next {
+    background-color: transparent;   /* Arka plan şeffaf (İkon ön planda) */
+    border: 2px solid #555555;       /* GRİ ÇERÇEVE (İstediğin özellik bu) */
+    border-radius: 15px;             /* Köşeler yuvarlak */
+    min-width: 30px;                 /* Buton çok daralmasın */
+    min-height: 30px;
+}
+/* Genel Tab Çerçevesi */
+QTabWidget::pane {
+    border: 1px solid #444444;
+    background-color: #1e1e1e; /* İçerik alanı rengi */
+    border-radius: 4px;
+}
+
+/* Sekme Başlıklarının Olduğu Şerit */
+QTabBar::tab {
+    background-color: #2b2b2b; /* Pasif sekme rengi */
+    color: #aaaaaa;            /* Pasif yazı rengi */
+    padding: 8px 20px;         /* Genişlik ve yükseklik */
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    margin-right: 2px;         /* Sekmeler birbirine yapışmasın */
+}
+
+/* Seçili Olan (Aktif) Sekme */
+QTabBar::tab:selected {
+    background-color: #1e1e1e; /* İçerikle aynı renk olsun ki bütünleşsin */
+    color: #00ff00;            /* Aktif dosya ismi YEŞİL yansın */
+    border-bottom: 2px solid #00ff00; /* Altına yeşil çizgi çekelim */
+    font-weight: bold;
+}
+
+/* Üzerine Gelince */
+QTabBar::tab:hover {
+    background-color: #333333;
+    color: white;
+}</string>
+  </property>
+  <widget class="QListWidget" name="widget_directory_list">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>120</y>
+     <width>451</width>
+     <height>651</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>21</y>
+     <width>1141</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout">
+    <item>
+     <widget class="QPushButton" name="button_create_a_file">
+      <property name="text">
+       <string>Create a File</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_create_a_folder">
+      <property name="text">
+       <string>Create a Folder</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_download_a_file_or_folder">
+      <property name="text">
+       <string>Download a File or Folder</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_upload_a_file_or_folder">
+      <property name="text">
+       <string>Upload a File or Folder</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_logout">
+      <property name="text">
+       <string>Logout</string>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QTabWidget" name="tab_editor">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>80</y>
+     <width>691</width>
+     <height>651</height>
+    </rect>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="currentIndex">
+    <number>0</number>
+   </property>
+   <widget class="QWidget" name="tab_3">
+    <attribute name="title">
+     <string>Tab 1</string>
+    </attribute>
+    <widget class="QPlainTextEdit" name="text_edit_editor">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>0</y>
+       <width>691</width>
+       <height>621</height>
+      </rect>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tab_4">
+    <attribute name="title">
+     <string>Tab 2</string>
+    </attribute>
+   </widget>
+  </widget>
+  <widget class="QWidget" name="layoutWidget">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>70</y>
+     <width>451</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <layout class="QHBoxLayout" name="horizontalLayout_2">
+    <property name="sizeConstraint">
+     <enum>QLayout::SizeConstraint::SetFixedSize</enum>
+    </property>
+    <item>
+     <widget class="QPushButton" name="button_back">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="resources.qrc">
+        <normaloff>:/new/prefix1/images/button_back.png</normaloff>:/new/prefix1/images/button_back.png</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="button_next">
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset resource="resources.qrc">
+        <normaloff>:/new/prefix1/images/button_next.png</normaloff>:/new/prefix1/images/button_next.png</iconset>
+      </property>
+      <property name="iconSize">
+       <size>
+        <width>50</width>
+        <height>50</height>
+       </size>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QTextEdit" name="textEdit">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QPushButton" name="button_save_file">
+   <property name="geometry">
+    <rect>
+     <x>490</x>
+     <y>730</y>
+     <width>691</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Save File </string>
+   </property>
+  </widget>
+  <zorder>layoutWidget</zorder>
+  <zorder>widget_directory_list</zorder>
+  <zorder>layoutWidget</zorder>
+  <zorder>tab_editor</zorder>
+  <zorder>button_save_file</zorder>
+ </widget>
+ <resources>
+  <include location="resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
