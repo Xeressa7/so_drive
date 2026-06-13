@@ -1,7 +1,7 @@
 # so_drive
 
 A TCP-based remote file manager with a Qt6 GUI client and a plain C++ server.  
-The client runs on **Windows**; the server runs on **Linux**.
+The client runs on **Windows**. The server runs on **Linux, macOS, or Windows**.
 
 ---
 
@@ -30,8 +30,11 @@ so_drive/
 ├── so_drive.pro             # qmake build file
 ├── CMakeLists.txt           # CMake build file
 ├── server/
-│   └── server.cpp           # Plain C++ TCP server (Linux)
-├── build.bat                # One-click build script (Windows)
+│   ├── server.cpp           # C++ TCP server (cross-platform)
+│   ├── sqlite3.c            # SQLite amalgamation (bundled, no install needed)
+│   ├── sqlite3.h
+│   └── build.bat            # One-click server build (Windows/MinGW)
+├── build.bat                # One-click client build script (Windows)
 └── setup.bat                # Qt environment installer (Windows)
 ```
 
@@ -104,47 +107,58 @@ C:\Qt\6.10.1\mingw_64\bin\designer.exe
 
 ---
 
-## Server — Build (Linux)
+## Server — Build
 
-The server uses POSIX sockets, C++17 filesystem, and SQLite3.
+The server is cross-platform. SQLite is bundled (`sqlite3.c`) — no package manager needed.
 
-### Dependencies
-
-```bash
-# Debian/Ubuntu
-sudo apt install g++ libsqlite3-dev
-
-# Arch
-sudo pacman -S gcc sqlite
-```
-
-### Compile
+### Linux / macOS
 
 ```bash
 cd server
-g++ server.cpp -o server -std=c++17 -lpthread -lsqlite3
+make
+./server
 ```
 
-### Run
+`make` automatically downloads the SQLite amalgamation on first run (requires `curl` or `wget` and `unzip`). No package manager needed.
+
+### Windows (MinGW)
+
+Option A — use the batch script:
+
+```
+cd server
+build.bat
+```
+
+Option B — manually (MinGW must be in PATH):
+
+```bat
+set PATH=C:\Qt\Tools\mingw1310_64\bin;%PATH%
+cd server
+gcc -c sqlite3.c -o sqlite3.o
+g++ server.cpp sqlite3.o -o server.exe -std=c++17 -lpthread -lws2_32
+server.exe
+```
+
+### First Run — Default User
+
+On first startup the server automatically creates a SQLite database and a default user:
+
+| Username | Password | Folder |
+|---|---|---|
+| `admin` | `admin123` | `./users/admin` |
+
+To add more users, open `server.cpp`, uncomment the `addUser(...)` line in `main()`, rebuild once, then comment it out again.
+
+### Connecting Over the Internet (ngrok)
 
 ```bash
-./server
-# Listens on port 12345 by default
+# On the server machine:
+ngrok tcp 12345
+
+# Copy the forwarding address (e.g. 0.tcp.ngrok.io:12345)
+# Enter it as IP + port in the client login screen
 ```
-
-### Database
-
-The server expects a SQLite database file named `User_Informations.sqlite` in the same directory, with the following schema:
-
-```sql
-CREATE TABLE UserInformation (
-    Username   TEXT NOT NULL,
-    Password   TEXT NOT NULL,
-    UserFolder TEXT NOT NULL
-);
-```
-
-`UserFolder` is the absolute path to the user's sandbox directory on the server.
 
 ---
 
@@ -153,7 +167,7 @@ CREATE TABLE UserInformation (
 | Component | Version | Purpose |
 |---|---|---|
 | Qt | 6.10.1 | Client GUI framework |
-| MinGW | 13.1.0 64-bit | C++ compiler (Windows) |
-| Python + aqtinstall | any | Qt installer script (one-time) |
-| GCC | any C++17 | Server compiler (Linux) |
-| libsqlite3 | any | Server authentication |
+| MinGW | 13.1.0 64-bit | C++ compiler (Windows client) |
+| Python + aqtinstall | any | Qt installer script (one-time setup) |
+| GCC / MinGW | C++17 | Server compiler (Linux / Windows) |
+| SQLite amalgamation | 3.x | Bundled in `server/` — no install needed |

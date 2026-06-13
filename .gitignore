@@ -16,6 +16,7 @@ cmake_install.cmake
 !CMakeLists.txt
 Makefile
 Makefile.*
+!server/Makefile
 .qmake.stash
 .qmake.cache
 
@@ -31,6 +32,14 @@ Makefile.*
 *.dylib
 debug/
 release/
+
+# Server — SQLite amalgamation (make ile otomatik indirilir)
+server/sqlite3.c
+server/sqlite3.h
+
+# Server runtime files (auto-created on first run)
+server/User_Informations.sqlite
+server/users/
 
 # Qt auto-generated files (produced at build time)
 moc_*.cpp
