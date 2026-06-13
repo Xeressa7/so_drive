@@ -2,348 +2,333 @@
 #include "ui_filewindow.h"
 #include "dialognewitem.h"
 #include <QFileInfo>
-#include <QDebug>
 #include <QMessageBox>
 
-FileWindow::FileWindow(QWidget *parent) :
-    QWidget(parent),
-    ui(new Ui::FileWindow)
+// ─── CONSTRUCTOR / DESTRUCTOR ─────────────────────────────────────────────────
+
+FileWindow::FileWindow(QWidget *parent)
+    : QWidget(parent)
+    , ui(new Ui::FileWindow)
+    , socket(nullptr)
+    , isDownloading(false)
+    , downloadFileSize(0)
+    , receivedBytes(0)
+    , localFile(nullptr)
+    , isUploading(false)
+    , uploadFile(nullptr)
 {
     ui->setupUi(this);
 
-    // varsayılan tabları silme
+    // Editör sekmesi başlangıcı — sadece bir sekme olsun
     ui->tab_editor->setTabText(0, "Editor");
-    while (ui->tab_editor->count() > 1) {
+    while (ui->tab_editor->count() > 1)
         ui->tab_editor->removeTab(1);
-    }
 
+    // Dosya listesi ikon boyutu
     ui->widget_directory_list->setIconSize(QSize(32, 32));
-    ui->textEdit->setFixedHeight(30);
-    ui->textEdit->setText("/");
 
+    // Editör stili (karanlık tema)
     ui->text_edit_editor->setStyleSheet("color: white; background-color: #2b2b2b;");
 
-    ui->widget_directory_list->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->widget_directory_list, &QListWidget::customContextMenuRequested, this, &FileWindow::show_context_menu);
+    // Adres çubuğunu başlangıç konumuna ayarla
+    ui->label_path->setText("/");
 
-    is_downloading = false;
-    is_uploading = false;
-    local_file = nullptr;
-    upload_file = nullptr;
-    download_file_size = 0;
-    received_bytes = 0;
+    // Sağ tık menüsünü etkinleştir
+    ui->widget_directory_list->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->widget_directory_list, &QListWidget::customContextMenuRequested,
+            this, &FileWindow::show_context_menu);
 }
 
 FileWindow::~FileWindow()
 {
-    if (local_file) {
-        if (local_file->isOpen()) local_file->close();
-        delete local_file;
+    // Açık dosyaları temizle (crash önlemek için)
+    if (localFile) {
+        if (localFile->isOpen()) localFile->close();
+        delete localFile;
     }
-    if (upload_file) {
-        if (upload_file->isOpen()) upload_file->close();
-        delete upload_file;
+    if (uploadFile) {
+        if (uploadFile->isOpen()) uploadFile->close();
+        delete uploadFile;
     }
     delete ui;
 }
 
-// --- SOKET AYARLARI ---
+// ─── SOKET DEVRALMA ──────────────────────────────────────────────────────────
+
 void FileWindow::setSocket(QTcpSocket *s)
 {
-    this->socket = s;
+    socket = s;
+
+    // Eski bağlantıları temizle, bu pencere için yeniden kur
     socket->disconnect();
-
     connect(socket, &QTcpSocket::readyRead, this, &FileWindow::onReadyRead);
-    connect(ui->widget_directory_list, &QListWidget::itemDoubleClicked, this, &FileWindow::onItemDoubleClicked);
+    connect(ui->widget_directory_list, &QListWidget::itemDoubleClicked,
+            this, &FileWindow::onItemDoubleClicked);
 
-    qDebug() << "Soket FileWindow'a devredildi.";
-
-    if(this->socket->isOpen()) {
-        this->socket->write("LIST_FILES");
-    }
+    // Soket hazır, ilk dosya listesini iste
+    if (socket->isOpen())
+        socket->write("LIST_FILES");
 }
 
-// --- VERİ OKUMA VE İŞLEME MERKEZİ ---
+// ─── VERİ OKUMA VE İŞLEME ────────────────────────────────────────────────────
+
+/*
+ * TCP'den gelen tüm veriler buraya düşer.
+ * İki farklı mod var:
+ *   1. İndirme modu (isDownloading == true): gelen byte'lar doğrudan diske yazılır.
+ *   2. Komut modu: gelen string parse edilip ilgili işlem yapılır.
+ */
 void FileWindow::onReadyRead()
 {
-    if (is_downloading) {
-        QByteArray data = socket->readAll();
+    // --- Mod 1: İndirme devam ediyor ---
+    if (isDownloading) {
+        QByteArray chunk = socket->readAll();
 
-        if (local_file && local_file->isOpen()) {
-            qint64 written = local_file->write(data);
-            received_bytes += written;
-            socket->flush(); // Veriyi diske itele
+        if (localFile && localFile->isOpen()) {
+            localFile->write(chunk);
+            receivedBytes += chunk.size();
         }
 
-        if (received_bytes >= download_file_size) {
-            is_downloading = false;
-
-            if (local_file) {
-                local_file->close();
-                delete local_file;
-                local_file = nullptr;
-            }
-            QMessageBox::information(this, "Success", "File downloaded successfully!");
-
+        // Beklenen boyuta ulaşıldıysa indirme tamamdır
+        if (receivedBytes >= downloadFileSize) {
+            isDownloading = false;
+            localFile->close();
+            delete localFile;
+            localFile = nullptr;
+            QMessageBox::information(this, "Başarılı", "Dosya indirildi.");
         }
         return;
     }
 
-    // --- 2. NORMAL MOD (KOMUTLAR) ---
+    // --- Mod 2: Normal komut yanıtı ---
     QByteArray data = socket->readAll();
 
+    // SIZE mesajı: indirme başlamak üzere, boyutu öğren
     if (data.startsWith("SIZE|")) {
-        int split_index = data.indexOf('|');
+        // Format: "SIZE|12345" — ardından binary veri gelebilir (aynı pakette)
+        int pipeIdx = data.indexOf('|');
+        int dataStart = pipeIdx + 1;
 
-        int data_start_index = data.length();
-        QString packet_str = QString::fromUtf8(data);
+        // Boyut string'inin nerede bittiğini bul
+        while (dataStart < data.size() && data[dataStart] >= '0' && data[dataStart] <= '9')
+            dataStart++;
 
-        for (int i = split_index + 1; i < data.length(); ++i) {
-            if (!packet_str[i].isDigit()) {
-                data_start_index = i;
-                break;
-            }
+        QString sizeStr = QString::fromUtf8(data.mid(pipeIdx + 1, dataStart - pipeIdx - 1));
+        bool ok;
+        downloadFileSize = sizeStr.toLongLong(&ok);
+
+        if (!ok || !localFile || !localFile->isOpen()) return;
+
+        if (downloadFileSize == 0) {
+            // Boş dosya
+            localFile->close();
+            delete localFile;
+            localFile = nullptr;
+            QMessageBox::information(this, "Başarılı", "Boş dosya indirildi.");
+            return;
         }
 
-        QString size_str = packet_str.mid(split_index + 1, data_start_index - (split_index + 1));
+        // İndirme moduna geç
+        isDownloading = true;
+        receivedBytes = 0;
 
-        bool ok;
-        download_file_size = size_str.toLongLong(&ok);
+        // SIZE ile aynı pakette gelen veri varsa hemen yaz
+        if (dataStart < data.size()) {
+            QByteArray leftover = data.mid(dataStart);
+            localFile->write(leftover);
+            receivedBytes += leftover.size();
 
-        if (ok && local_file && local_file->isOpen()) {
-            is_downloading = true;
-            received_bytes = 0;
-            qDebug() << "Indirme basladi. Boyut:" << download_file_size;
-
-            //0 byte exp fix
-            if (download_file_size == 0) {
-                is_downloading = false;
-                local_file->close();
-                delete local_file;
-                local_file = nullptr;
-                QMessageBox::information(this, "Success", "Empty file downloaded.");
-                return;
+            if (receivedBytes >= downloadFileSize) {
+                isDownloading = false;
+                localFile->close();
+                delete localFile;
+                localFile = nullptr;
+                QMessageBox::information(this, "Başarılı", "Dosya indirildi.");
             }
-
-            if (data_start_index < data.length()) {
-                QByteArray leftover = data.mid(data_start_index);
-                local_file->write(leftover);
-                received_bytes += leftover.size();
-
-                // tek bufferda biterse
-                if (received_bytes >= download_file_size) {
-                    is_downloading = false;
-                    local_file->close();
-                    delete local_file;
-                    local_file = nullptr;
-                    QMessageBox::information(this, "Success", "File downloaded successfully!");
-                }
-            }
-        } else {
-            qDebug() << "HATA: SIZE geldi ama dosya hazir degil veya boyut hatali.";
         }
         return;
     }
 
     QString message = QString::fromUtf8(data);
 
-    // hata kontrolü
-    if(message.startsWith("ERR|")) {
-        QMessageBox::warning(this, "Error", message.mid(4));
+    // Hata mesajı
+    if (message.startsWith("ERR|")) {
+        QMessageBox::warning(this, "Hata", message.mid(4));
 
-        if (local_file) {
-            local_file->close();
-            local_file->remove();
-            delete local_file;
-            local_file = nullptr;
-            is_downloading = false;
+        // İndirme başlamadan hata geldiyse yarım dosyayı sil
+        if (localFile) {
+            localFile->close();
+            localFile->remove();
+            delete localFile;
+            localFile = nullptr;
+            isDownloading = false;
         }
         return;
     }
 
-    // mesaj kontrolü
+    // Bilgi mesajı (kaydetme vb.)
     if (message.startsWith("MSG|")) {
-        QMessageBox::information(this, "Server Message", message.mid(4));
+        QMessageBox::information(this, "Sunucu", message.mid(4));
         return;
     }
 
-    // preview içerik kontrol
+    // Dosya içeriği (CAT komutu yanıtı)
     if (message.startsWith("CONTENT|")) {
-        int first_pipe = message.indexOf('|');
-        int second_pipe = message.indexOf('|', first_pipe + 1);
+        int pipe1 = message.indexOf('|');
+        int pipe2 = message.indexOf('|', pipe1 + 1);
+        if (pipe2 == -1) return;
 
-        if (second_pipe != -1) {
-            QString file_name = message.mid(first_pipe + 1, second_pipe - first_pipe - 1);
-            QString content = message.mid(second_pipe + 1);
+        QString fileName = message.mid(pipe1 + 1, pipe2 - pipe1 - 1);
+        QString content  = message.mid(pipe2 + 1);
 
-            current_open_file = file_name;
-            ui->text_edit_editor->setPlainText(content);
-            ui->tab_editor->setTabText(0, file_name);
-        }
+        currentOpenFile = fileName;
+        ui->text_edit_editor->setPlainText(content);
+        ui->tab_editor->setTabText(0, fileName);
         return;
     }
 
-    // --- UPLOAD ONAYI  ---
-    if (is_uploading && message.startsWith("READY_TO_UPLOAD")) {
-        qDebug() << "Sunucu hazir, dosya gonderiliyor...";
+    // Upload onayı: sunucu hazır, dosyayı gönder
+    if (isUploading && message.startsWith("READY_TO_UPLOAD")) {
+        // Tüm dosyayı tek seferde yaz — Qt soketi arka planda buffer'layıp gönderir
+        QByteArray fileData = uploadFile->readAll();
+        socket->write(fileData);
 
-        while (!upload_file->atEnd()) {
-            QByteArray chunk = upload_file->read(4096);
-            socket->write(chunk);
-            socket->flush();
-            socket->waitForBytesWritten(10);
-        }
+        uploadFile->close();
+        delete uploadFile;
+        uploadFile = nullptr;
+        isUploading = false;
 
-        upload_file->close();
-        delete upload_file;
-        upload_file = nullptr;
-        is_uploading = false;
-
-        QMessageBox::information(this, "Success", "File uploaded successfully!");
+        QMessageBox::information(this, "Başarılı", "Dosya yüklendi.");
         return;
     }
 
+    // Yukarıdakilerin hiçbiri değilse dosya listesidir
     updateFileList(message);
 }
 
-// --- İNDİRME ONAY ---
-void FileWindow::start_download(const QString &file_name) {
-    // 1. Kullanıcıya sor
-    QString save_path = QFileDialog::getSaveFileName(this, "Save File", QDir::homePath() + "/" + file_name);
-    if (save_path.isEmpty()) return;
+// ─── İNDİRME ─────────────────────────────────────────────────────────────────
 
-    // 2. Dosyayı hazırla
-    if (local_file) { delete local_file; local_file = nullptr; }
-    local_file = new QFile(save_path);
+void FileWindow::start_download(const QString &fileName)
+{
+    // Kullanıcıdan kayıt yeri iste
+    QString savePath = QFileDialog::getSaveFileName(
+        this, "Dosyayı Kaydet", QDir::homePath() + "/" + fileName);
+    if (savePath.isEmpty()) return;
 
-    if (!local_file->open(QIODevice::WriteOnly)) {
-        QMessageBox::warning(this, "Error", "Could not save file to disk!");
-        delete local_file;
-        local_file = nullptr;
+    // Kayıt dosyasını aç
+    if (localFile) delete localFile;
+    localFile = new QFile(savePath);
+
+    if (!localFile->open(QIODevice::WriteOnly)) {
+        QMessageBox::warning(this, "Hata", "Dosya diske kaydedilemedi.");
+        delete localFile;
+        localFile = nullptr;
         return;
     }
 
-    QString command = "DOWNLOAD|" + file_name;
-    socket->write(command.toUtf8());
+    socket->write(("DOWNLOAD|" + fileName).toUtf8());
 }
 
-// --- DOWNLOAD BUTONU ---
 void FileWindow::on_button_download_a_file_or_folder_clicked()
 {
     QListWidgetItem *item = ui->widget_directory_list->currentItem();
     if (!item) {
-        QMessageBox::warning(this, "Warning", "Please select a file to download.");
+        QMessageBox::warning(this, "Uyarı", "Lütfen bir dosya seçin.");
         return;
     }
 
-    bool is_dir = item->data(Qt::UserRole).toBool();
-    if (is_dir) {
-        QMessageBox::information(this, "Info", "Folder download is not supported yet.");
+    bool isDir = item->data(Qt::UserRole).toBool();
+    if (isDir) {
+        QMessageBox::information(this, "Bilgi", "Klasör indirme henüz desteklenmiyor.");
         return;
     }
 
-    QString real_name = item->data(Qt::UserRole + 1).toString();
-    start_download(real_name);
+    start_download(item->data(Qt::UserRole + 1).toString());
 }
 
-// --- UPLOAD BUTONU ---
+// ─── YÜKLEME ─────────────────────────────────────────────────────────────────
+
 void FileWindow::on_button_upload_a_file_or_folder_clicked()
 {
-    QString file_path = QFileDialog::getOpenFileName(this, "Select File to Upload");
-    if (file_path.isEmpty()) return;
+    QString filePath = QFileDialog::getOpenFileName(this, "Yüklenecek Dosyayı Seç");
+    if (filePath.isEmpty()) return;
 
-    QFileInfo fi(file_path);
-    QString file_name = fi.fileName();
-    qint64 file_size = fi.size();
+    QFileInfo fi(filePath);
 
-    if (upload_file) { delete upload_file; upload_file = nullptr; }
-    upload_file = new QFile(file_path);
+    if (uploadFile) delete uploadFile;
+    uploadFile = new QFile(filePath);
 
-    if (!upload_file->open(QIODevice::ReadOnly)) {
-        QMessageBox::warning(this, "Error", "Could not open local file!");
+    if (!uploadFile->open(QIODevice::ReadOnly)) {
+        QMessageBox::warning(this, "Hata", "Dosya açılamadı.");
+        delete uploadFile;
+        uploadFile = nullptr;
         return;
     }
 
-    QString command = "UPLOAD|" + file_name + "|" + QString::number(file_size);
-    socket->write(command.toUtf8());
-
-    is_uploading = true;
-    qDebug() << "Upload basligi gonderildi:" << command;
+    // Sunucuya boyutu bildir, onay beklenir (READY_TO_UPLOAD)
+    QString cmd = "UPLOAD|" + fi.fileName() + "|" + QString::number(fi.size());
+    socket->write(cmd.toUtf8());
+    isUploading = true;
 }
 
-// --- SAĞ TIK MENÜ ---
+// ─── SAĞ TIK MENÜSÜ ──────────────────────────────────────────────────────────
+
 void FileWindow::show_context_menu(const QPoint &pos)
 {
     QListWidgetItem *item = ui->widget_directory_list->itemAt(pos);
     if (!item) return;
 
-    QMenu contextMenu(tr("Context menu"), this);
-    QAction actionOpen("Open", this);
-    QAction actionDownload("Download", this);
-    QAction actionDelete("Delete", this);
-
-    contextMenu.addAction(&actionOpen);
-    contextMenu.addAction(&actionDownload);
-    contextMenu.addAction(&actionDelete);
-
-    connect(&actionOpen, &QAction::triggered, this, &FileWindow::open_item);
-    connect(&actionDownload, &QAction::triggered, this, &FileWindow::on_button_download_a_file_or_folder_clicked);
-    connect(&actionDelete, &QAction::triggered, this, &FileWindow::delete_item);
-
-    contextMenu.exec(ui->widget_directory_list->mapToGlobal(pos));
+    QMenu menu(this);
+    menu.addAction("Open",     this, &FileWindow::open_item);
+    menu.addAction("Download", this, &FileWindow::on_button_download_a_file_or_folder_clicked);
+    menu.addAction("Delete",   this, &FileWindow::delete_item);
+    menu.exec(ui->widget_directory_list->mapToGlobal(pos));
 }
 
-// --- SİLME İŞLEMİ ---
 void FileWindow::delete_item()
 {
     QListWidgetItem *item = ui->widget_directory_list->currentItem();
     if (!item) return;
 
-    QString real_name = item->data(Qt::UserRole + 1).toString();
+    QString name = item->data(Qt::UserRole + 1).toString();
 
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Delete",
-                                  "Are you sure you want to delete '" + real_name + "'?\nThis action cannot be undone.",
-                                  QMessageBox::Yes | QMessageBox::No);
+    auto reply = QMessageBox::question(this, "Sil",
+        "'" + name + "' silinecek. Emin misin?\nBu işlem geri alınamaz.",
+        QMessageBox::Yes | QMessageBox::No);
 
-    if (reply == QMessageBox::Yes) {
-        QString command = "DELETE|" + real_name;
-        socket->write(command.toUtf8());
-    }
+    if (reply == QMessageBox::Yes)
+        socket->write(("DELETE|" + name).toUtf8());
 }
 
-// --- AÇMA İŞLEMİ ---
 void FileWindow::open_item()
 {
     QListWidgetItem *item = ui->widget_directory_list->currentItem();
-    if (item) {
-        onItemDoubleClicked(item);
-    }
+    if (item) onItemDoubleClicked(item);
 }
 
-// --- LİSTE GÜNCELLEME ---
+// ─── DOSYA LİSTESİ ───────────────────────────────────────────────────────────
+
+/*
+ * Sunucudan gelen dosya listesi string'ini parse eder.
+ * Format: "dosya.txt|1024;klasor|DIR;..."
+ */
 void FileWindow::updateFileList(const QString &data)
 {
-    if (data == "EMPTY") {
-        ui->widget_directory_list->clear();
-        return;
-    }
-
     ui->widget_directory_list->clear();
-    QStringList items = data.split(';', Qt::SkipEmptyParts);
 
-    for (const QString &item : items) {
-        QStringList parts = item.split('|');
+    if (data == "EMPTY") return;
+
+    for (const QString &entry : data.split(';', Qt::SkipEmptyParts)) {
+        QStringList parts = entry.split('|');
         if (parts.size() < 2) continue;
 
-        QString name = parts[0];
-        QString meta = parts[1];
+        QString name  = parts[0];
+        QString meta  = parts[1];
+        bool    isDir = (meta == "DIR");
 
         QListWidgetItem *listItem = new QListWidgetItem();
-        bool isDir = (meta == "DIR");
-
         listItem->setIcon(getIconForFile(name, isDir));
-        listItem->setData(Qt::UserRole, isDir);
+        listItem->setData(Qt::UserRole,     isDir);
         listItem->setData(Qt::UserRole + 1, name);
 
         if (isDir) {
@@ -351,58 +336,61 @@ void FileWindow::updateFileList(const QString &data)
             listItem->setText(name);
         } else {
             listItem->setForeground(QBrush(QColor("#ffffff")));
-            listItem->setText(name + " (" + meta + " bytes)");
+            listItem->setText(name + "  (" + meta + " bytes)");
         }
+
         ui->widget_directory_list->addItem(listItem);
     }
 }
 
-// --- ÇİFT TIKLAMA ---
+// ─── ÇİFT TIKLAMA ────────────────────────────────────────────────────────────
+
 void FileWindow::onItemDoubleClicked(QListWidgetItem *item)
 {
-    bool isDir = item->data(Qt::UserRole).toBool();
-    QString real_name = item->data(Qt::UserRole + 1).toString();
+    bool    isDir = item->data(Qt::UserRole).toBool();
+    QString name  = item->data(Qt::UserRole + 1).toString();
 
     if (isDir) {
-        historyStack.push(real_name);
+        // Klasöre gir, geçmişe ekle
+        historyStack.push(name);
         forwardStack.clear();
         updateAddressBar();
-
-        QString command = "CD|" + real_name;
-        socket->write(command.toUtf8());
-    }
-    else {
-        if (is_file_readable(real_name)) {
-            socket->write(("CAT|" + real_name).toUtf8());
+        socket->write(("CD|" + name).toUtf8());
+    } else {
+        if (is_file_readable(name)) {
+            // Metin dosyası: editörde göster
+            socket->write(("CAT|" + name).toUtf8());
         } else {
-            QMessageBox::StandardButton reply = QMessageBox::question(this, "Preview",
-                                                                      "This file cannot be previewed. Do you want to download it?", QMessageBox::Yes | QMessageBox::No);
-
-            if (reply == QMessageBox::Yes) {
-                start_download(real_name);
-            }
+            // Binary dosya: indirme teklif et
+            auto reply = QMessageBox::question(this, "Önizleme Yok",
+                "Bu dosya editörde açılamaz. İndirmek ister misin?",
+                QMessageBox::Yes | QMessageBox::No);
+            if (reply == QMessageBox::Yes)
+                start_download(name);
         }
     }
 }
 
-// --- KAYDET BUTONU ---
+// ─── DOSYA KAYDETME ──────────────────────────────────────────────────────────
+
 void FileWindow::on_button_save_file_clicked()
 {
-    if (current_open_file.isEmpty()) {
-        QMessageBox::warning(this, "Error", "No file is currently open!");
+    if (currentOpenFile.isEmpty()) {
+        QMessageBox::warning(this, "Hata", "Açık dosya yok.");
         return;
     }
+
     QString content = ui->text_edit_editor->toPlainText();
-    QString command = "WRITE|" + current_open_file + "|" + content;
-    socket->write(command.toUtf8());
+    socket->write(("WRITE|" + currentOpenFile + "|" + content).toUtf8());
 }
 
-// --- NAVİGASYON ---
+// ─── NAVİGASYON ──────────────────────────────────────────────────────────────
+
 void FileWindow::on_button_back_clicked()
 {
     if (historyStack.isEmpty()) return;
-    QString currentFolder = historyStack.pop();
-    forwardStack.push(currentFolder);
+
+    forwardStack.push(historyStack.pop());
     updateAddressBar();
     socket->write("CD|..");
 }
@@ -410,90 +398,122 @@ void FileWindow::on_button_back_clicked()
 void FileWindow::on_button_next_clicked()
 {
     if (forwardStack.isEmpty()) return;
-    QString nextFolder = forwardStack.pop();
-    historyStack.push(nextFolder);
+
+    QString next = forwardStack.pop();
+    historyStack.push(next);
     updateAddressBar();
-    QString command = "CD|" + nextFolder;
-    socket->write(command.toUtf8());
+    socket->write(("CD|" + next).toUtf8());
 }
 
-// --- CREATE FILE ---
+void FileWindow::updateAddressBar()
+{
+    QString path = "/";
+    for (const QString &dir : historyStack)
+        path += dir + "/";
+    ui->label_path->setText(path);
+}
+
+// ─── YENİ ÖĞE DİYALOGLARI ───────────────────────────────────────────────────
+
 void FileWindow::on_button_create_a_file_clicked()
 {
     DialogNewItem dialog(this);
     dialog.setMode(DialogNewItem::FileMode);
+    if (dialog.exec() != QDialog::Accepted) return;
 
-    if (dialog.exec() == QDialog::Accepted) {
-        QString name = dialog.getName();
-        QString ext = dialog.getExtension();
-        if (name.isEmpty()) { QMessageBox::warning(this, "Warning", "File name cannot be empty!"); return; }
-        QString fullName = name + ext;
-        QString command = "TOUCH|" + fullName;
-        socket->write(command.toUtf8());
+    QString name = dialog.getName().trimmed();
+    if (name.isEmpty()) {
+        QMessageBox::warning(this, "Uyarı", "Dosya adı boş olamaz.");
+        return;
     }
+
+    socket->write(("TOUCH|" + name + dialog.getExtension()).toUtf8());
 }
 
-// --- CREATE FOLDER ---
 void FileWindow::on_button_create_a_folder_clicked()
 {
     DialogNewItem dialog(this);
     dialog.setMode(DialogNewItem::FolderMode);
-    if (dialog.exec() == QDialog::Accepted) {
-        QString name = dialog.getName();
-        if (name.isEmpty()){ QMessageBox::warning(this, "Warning", "Folder name cannot be empty!"); return; }
-        QString command = "MKDIR|" + name;
-        socket->write(command.toUtf8());
+    if (dialog.exec() != QDialog::Accepted) return;
+
+    QString name = dialog.getName().trimmed();
+    if (name.isEmpty()) {
+        QMessageBox::warning(this, "Uyarı", "Klasör adı boş olamaz.");
+        return;
     }
+
+    socket->write(("MKDIR|" + name).toUtf8());
 }
 
-void FileWindow::on_button_logout_clicked() {
-    if(socket && socket->isOpen()) {
-        socket->disconnectFromHost();
-    }
-    QProcess::startDetached(qApp->arguments()[0], qApp->arguments());
-    qApp->quit();
-}
+// ─── ÇIKIŞ ───────────────────────────────────────────────────────────────────
 
-// --- YARDIMCILAR ---
-void FileWindow::updateAddressBar()
+void FileWindow::on_button_logout_clicked()
 {
-    QString path = "/";
-    for(const QString &dir : historyStack) {
-        path += dir + "/";
-    }
-    ui->textEdit->setText(path);
+    if (socket && socket->isOpen())
+        socket->disconnectFromHost();
+
+    // MainWindow'u uyar, kendini göstersin
+    emit loggedOut();
+    this->close();
 }
 
-bool FileWindow::is_file_readable(const QString &file_name) {
-    QFileInfo fi(file_name);
-    QString ext = fi.suffix().toLower();
-    QStringList readable_exts = {"txt", "c", "cpp", "h", "hpp", "py", "js", "json", "xml", "html", "css", "sql", "log", "ini", "md"};
-    return readable_exts.contains(ext);
+// ─── YARDIMCILAR ─────────────────────────────────────────────────────────────
+
+/*
+ * Uzantıya göre dosyanın editörde okunabilir olup olmadığını belirler.
+ */
+bool FileWindow::is_file_readable(const QString &fileName)
+{
+    QString ext = QFileInfo(fileName).suffix().toLower();
+    static const QStringList readable = {
+        "txt","c","cpp","h","hpp","py","js","ts","json","xml",
+        "html","htm","css","sql","log","ini","md","sh","yaml","yml"
+    };
+    return readable.contains(ext);
 }
 
+/*
+ * Dosya adı ve türüne göre uygun ikonu döner.
+ * İkonlar resources.qrc içindeki images/ klasöründen gelir.
+ */
 QIcon FileWindow::getIconForFile(const QString &name, bool isDir)
 {
-    QString prefix = ":/new/prefix1/images/";
-    if (isDir) return QIcon(prefix + "ic_folder.png");
-    QFileInfo fileInfo(name);
-    QString ext = fileInfo.suffix().toLower();
+    if (isDir) return QIcon(":/new/prefix1/images/ic_folder.png");
 
-    if (ext == "cpp" || ext == "h" || ext == "hpp" || ext == "c") return QIcon(prefix + "ic_cpp.png");
-    if (ext == "py" || ext == "pyw") return QIcon(prefix + "ic_py.png");
-    if (ext == "json") return QIcon(prefix + "ic_json.png");
-    if (ext == "xml" || ext == "ui") return QIcon(prefix + "ic_xml.png");
-    if (ext == "sql" || ext == "sqlite" || ext == "db") return QIcon(prefix + "ic_sql.png");
-    if (ext == "html" || ext == "htm" || ext == "css" || ext == "js") return QIcon(prefix + "ic_html.png");
-    if (ext == "txt" || ext == "log" || ext == "ini") return QIcon(prefix + "ic_txt.png");
-    if (ext == "pdf") return QIcon(prefix + "ic_pdf.png");
-    if (ext == "docx" || ext == "doc") return QIcon(prefix + "ic_word.png");
-    if (ext == "xlsx" || ext == "xls" || ext == "csv") return QIcon(prefix + "ic_excel.png");
-    if (ext == "pptx" || ext == "ppt") return QIcon(prefix + "ic_ppt.png");
-    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "ico" || ext == "bmp" || ext == "gif") return QIcon(prefix + "ic_image.png");
-    if (ext == "mp4" || ext == "avi" || ext == "mkv" || ext == "mov" || ext == "flv") return QIcon(prefix + "ic_video.png");
-    if (ext == "mp3" || ext == "wav" || ext == "ogg" || ext == "flac") return QIcon(prefix + "ic_audio.png");
-    if (ext == "zip" || ext == "rar" || ext == "7z" || ext == "tar" || ext == "gz") return QIcon(prefix + "ic_zip.png");
-    if (ext == "exe" || ext == "msi" || ext == "bat" || ext == "sh") return QIcon(prefix + "ic_exe.png");
+    QString ext = QFileInfo(name).suffix().toLower();
 
-    return QIcon(prefix + "ic_file.png");
+    if (ext == "cpp" || ext == "h" || ext == "hpp" || ext == "c")
+        return QIcon(":/new/prefix1/images/ic_cpp.png");
+    if (ext == "py" || ext == "pyw")
+        return QIcon(":/new/prefix1/images/ic_py.png");
+    if (ext == "json")
+        return QIcon(":/new/prefix1/images/ic_json.png");
+    if (ext == "xml" || ext == "ui")
+        return QIcon(":/new/prefix1/images/ic_xml.png");
+    if (ext == "sql" || ext == "sqlite" || ext == "db")
+        return QIcon(":/new/prefix1/images/ic_sql.png");
+    if (ext == "html" || ext == "htm" || ext == "css" || ext == "js")
+        return QIcon(":/new/prefix1/images/ic_html.png");
+    if (ext == "txt" || ext == "log" || ext == "ini" || ext == "md")
+        return QIcon(":/new/prefix1/images/ic_txt.png");
+    if (ext == "pdf")
+        return QIcon(":/new/prefix1/images/ic_pdf.png");
+    if (ext == "docx" || ext == "doc")
+        return QIcon(":/new/prefix1/images/ic_word.png");
+    if (ext == "xlsx" || ext == "xls" || ext == "csv")
+        return QIcon(":/new/prefix1/images/ic_excel.png");
+    if (ext == "pptx" || ext == "ppt")
+        return QIcon(":/new/prefix1/images/ic_ppt.png");
+    if (ext == "png" || ext == "jpg" || ext == "jpeg" || ext == "bmp" || ext == "gif" || ext == "ico")
+        return QIcon(":/new/prefix1/images/ic_image.png");
+    if (ext == "mp4" || ext == "avi" || ext == "mkv" || ext == "mov")
+        return QIcon(":/new/prefix1/images/ic_video.png");
+    if (ext == "mp3" || ext == "wav" || ext == "ogg" || ext == "flac")
+        return QIcon(":/new/prefix1/images/ic_audio.png");
+    if (ext == "zip" || ext == "rar" || ext == "7z" || ext == "tar" || ext == "gz")
+        return QIcon(":/new/prefix1/images/ic_zip.png");
+    if (ext == "exe" || ext == "msi" || ext == "bat" || ext == "sh")
+        return QIcon(":/new/prefix1/images/ic_exe.png");
+
+    return QIcon(":/new/prefix1/images/ic_file.png");
 }
